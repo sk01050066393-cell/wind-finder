@@ -1,0 +1,21 @@
+{
+  "name": "wind-finder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "해운대 빌딩풍 위험도 지도와 안전 우회 길찾기 프로토타입",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.2.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0"
+  }
+}

@@ -1,0 +1,99 @@
+:root {
+  color-scheme: dark;
+  --ink: #f6f8fb;
+  --muted: #aeb9c9;
+  --panel: rgba(8, 17, 31, 0.86);
+  --line: rgba(255, 255, 255, 0.12);
+  --cyan: #45e5dc;
+  --blue: #4c89ff;
+  --danger: #ff4b55;
+  --warning: #ff9d3d;
+  --safe: #41d691;
+  font-family: Pretendard, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #08111f; color: var(--ink); }
+button, input, textarea { font: inherit; }
+button { color: inherit; }
+.hidden { display: none !important; }
+.app-shell, #map { position: fixed; inset: 0; }
+#map { background: #dce5e8; }
+.glass { background: var(--panel); border: 1px solid var(--line); box-shadow: 0 16px 45px rgba(0,0,0,.25); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+
+.topbar { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 18px; display: flex; align-items: center; gap: 11px; min-width: 245px; padding: 11px 14px; border-radius: 18px; z-index: 5; }
+.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: linear-gradient(145deg, var(--cyan), var(--blue)); color: #03121b; font-size: 21px; font-weight: 900; }
+.eyebrow { margin: 0 0 3px; color: var(--cyan); font-size: 10px; line-height: 1; letter-spacing: .14em; font-weight: 800; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: 21px; letter-spacing: -.03em; }
+h2 { margin-bottom: 0; font-size: 22px; letter-spacing: -.03em; }
+.live-chip { margin-left: auto; display: flex; align-items: center; gap: 6px; color: #85f4bd; font-size: 10px; }
+.live-chip span { width: 7px; height: 7px; border-radius: 50%; background: #55ef9e; box-shadow: 0 0 0 5px rgba(85,239,158,.13); }
+
+.weather-card { position: fixed; z-index: 5; top: max(97px, calc(env(safe-area-inset-top) + 80px)); left: 18px; width: 245px; padding: 15px 16px; border-radius: 18px; }
+.weather-card p { margin-bottom: 4px; color: var(--muted); font-size: 12px; }
+.weather-card strong { font-size: 34px; }
+.unit { color: var(--muted); font-size: 12px; }
+.weather-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 9px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.legend { position: fixed; z-index: 4; right: 18px; top: 18px; display: flex; gap: 13px; padding: 10px 13px; border-radius: 999px; font-size: 11px; }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.danger { background: var(--danger); }.dot.warning { background: var(--warning); }.dot.safe { background: var(--safe); }
+
+.action-dock { position: fixed; z-index: 5; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 5px; padding: 7px; border-radius: 22px; }
+.dock-button { min-width: 108px; padding: 10px 13px; border: 0; border-radius: 16px; background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #d6deea; font-size: 11px; }
+.dock-button:hover { background: rgba(255,255,255,.08); }
+.dock-button.accent { background: linear-gradient(145deg, var(--cyan), #3fb3f5); color: #04111e; font-weight: 800; }
+.dock-icon { font-size: 20px; line-height: 1; }
+
+.side-panel { position: fixed; z-index: 7; right: 18px; top: 70px; width: min(380px, calc(100vw - 36px)); padding: 20px; border-radius: 22px; }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.icon-button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.06); cursor: pointer; font-size: 22px; line-height: 1; }
+label { display: grid; gap: 7px; margin: 14px 0; color: #d4dce8; font-size: 12px; font-weight: 650; }
+input, textarea { width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 13px; outline: none; background: rgba(255,255,255,.07); color: var(--ink); }
+textarea { min-height: 112px; resize: vertical; }
+input:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(69,229,220,.12); }
+.primary-button, .secondary-button { width: 100%; padding: 13px 15px; border-radius: 13px; cursor: pointer; font-weight: 800; }
+.primary-button { border: 0; background: linear-gradient(145deg, var(--cyan), #58a9ff); color: #04111d; }
+.secondary-button { border: 1px solid rgba(69,229,220,.45); background: rgba(69,229,220,.09); color: var(--cyan); }
+.primary-button:disabled { opacity: .55; cursor: wait; }
+.fine-print { margin: 12px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.result-card { margin-top: 13px; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.05); font-size: 12px; line-height: 1.6; }
+
+.modal { width: min(540px, calc(100vw - 30px)); max-height: calc(100vh - 30px); padding: 0; border: 1px solid var(--line); border-radius: 26px; color: var(--ink); background: transparent; box-shadow: 0 30px 100px rgba(0,0,0,.55); overflow: auto; }
+.modal::backdrop { background: rgba(2,7,14,.68); backdrop-filter: blur(8px); }
+.modal-content { padding: 25px; background: #0b1627; }
+.modal-content.wide { min-height: 440px; }
+.onboarding-modal { width: min(760px, calc(100vw - 30px)); }
+.onboarding-modal .modal-content { padding: 34px; text-align: center; }
+.muted { color: var(--muted); }
+.persona-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 25px; }
+.persona-card { padding: 22px 16px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.04); cursor: pointer; text-align: left; }
+.persona-card:hover { transform: translateY(-2px); border-color: var(--cyan); background: rgba(69,229,220,.08); }
+.persona-card b { display: grid; place-items: center; width: 35px; height: 35px; margin-bottom: 24px; border-radius: 10px; color: #061320; background: var(--cyan); }
+.persona-card span, .persona-card small { display: block; }
+.persona-card span { font-size: 15px; font-weight: 800; }
+.persona-card small { margin-top: 7px; color: var(--muted); line-height: 1.45; }
+.chart-summary { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; margin-bottom: 12px; }
+.chart-summary strong { grid-row: 1 / 3; color: var(--warning); font-size: 40px; }
+.chart-summary span, .chart-summary p { margin: 0; color: var(--muted); font-size: 12px; }
+.chart-wrap { position: relative; height: 250px; margin: 10px 0 18px; }
+.pin-help, .coordinate-chip { padding: 10px 12px; border-radius: 12px; background: rgba(76,137,255,.1); color: #adc8ff; font-size: 12px; }
+.photo-preview { width: 100%; max-height: 210px; border-radius: 14px; object-fit: cover; }
+.report-detail img { width: 100%; max-height: 330px; border-radius: 16px; object-fit: cover; background: #101b2a; }
+.report-detail p { margin: 16px 0 8px; line-height: 1.65; }
+.report-detail time { color: var(--muted); font-size: 12px; }
+.toast { position: fixed; z-index: 20; left: 50%; bottom: 112px; transform: translateX(-50%); max-width: min(440px, calc(100vw - 30px)); padding: 12px 17px; border-radius: 999px; background: rgba(5,13,24,.92); border: 1px solid var(--line); box-shadow: 0 15px 45px rgba(0,0,0,.4); font-size: 12px; text-align: center; }
+
+@media (max-width: 720px) {
+  .topbar { left: 12px; top: max(10px, env(safe-area-inset-top)); min-width: 205px; }
+  .brand-mark { width: 36px; height: 36px; }
+  .weather-card { left: 12px; top: max(77px, calc(env(safe-area-inset-top) + 67px)); width: 205px; }
+  .legend { top: auto; right: 12px; bottom: 105px; flex-direction: column; gap: 6px; border-radius: 14px; }
+  .action-dock { width: calc(100vw - 24px); justify-content: space-between; }
+  .dock-button { flex: 1; min-width: 0; padding-inline: 6px; }
+  .side-panel { inset: auto 12px 100px 12px; width: auto; max-height: calc(100vh - 130px); overflow: auto; }
+  .persona-grid { grid-template-columns: 1fr; }
+  .onboarding-modal .modal-content { padding: 25px; text-align: left; }
+  .persona-card b { margin-bottom: 10px; }
+}
