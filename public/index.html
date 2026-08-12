@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#08111f" />
+    <title>풍파인더 | 해운대 빌딩풍 안전 지도</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+    <script referrerpolicy="origin" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=698483d07811fef2d4b8bc654fb6cd6a&autoload=false&libraries=services,clusterer,drawing"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <div id="map" aria-label="해운대 빌딩풍 위험 지도"></div>
+
+      <header class="topbar glass">
+        <div class="brand-mark" aria-hidden="true">風</div>
+        <div>
+          <p class="eyebrow">HAEUNDAE WIND SAFETY</p>
+          <h1>풍파인더</h1>
+        </div>
+        <div class="live-chip"><span></span><b>LIVE</b></div>
+      </header>
+
+      <section class="weather-card glass" aria-live="polite">
+        <div>
+          <p>현재 해운대</p>
+          <strong id="currentRisk">--</strong><span class="unit"> 위험지수</span>
+        </div>
+        <div class="weather-meta">
+          <span id="windSpeed">풍속 -- m/s</span>
+          <span id="dataSource">데이터 불러오는 중</span>
+        </div>
+      </section>
+
+      <aside class="legend glass" aria-label="위험도 범례">
+        <span><i class="dot danger"></i>위험 70+</span>
+        <span><i class="dot warning"></i>주의 45+</span>
+        <span><i class="dot safe"></i>보통</span>
+      </aside>
+
+      <section id="routePanel" class="side-panel glass hidden" aria-label="빌딩풍 회피 길찾기">
+        <div class="panel-head">
+          <div><p class="eyebrow">SAFE ROUTE</p><h2>빌딩풍 회피 길찾기</h2></div>
+          <button class="icon-button" data-close="routePanel" aria-label="닫기">×</button>
+        </div>
+        <label>출발지<input id="originInput" placeholder="예: 해운대역 또는 35.163,129.159" /></label>
+        <label>목적지<input id="destinationInput" placeholder="예: 동백섬" /></label>
+        <button id="findRouteButton" class="primary-button">안전 경로 찾기</button>
+        <div id="routeResult" class="result-card hidden"></div>
+        <p class="fine-print">카카오 자동차 길찾기 기반 참고 경로입니다. 보행자 전용도로와 현장 통제를 우선하세요.</p>
+      </section>
+
+      <nav class="action-dock glass" aria-label="주요 기능">
+        <button id="forecastButton" class="dock-button">
+          <span class="dock-icon">⌁</span><span>24시간 예측</span>
+        </button>
+        <button id="reportButton" class="dock-button accent">
+          <span class="dock-icon">＋</span><span>현장 제보</span>
+        </button>
+        <button id="routeButton" class="dock-button">
+          <span class="dock-icon">↝</span><span>안전 길찾기</span>
+        </button>
+      </nav>
+
+      <div id="toast" class="toast hidden" role="status"></div>
+    </main>
+
+    <dialog id="onboardingDialog" class="modal onboarding-modal">
+      <div class="modal-content">
+        <p class="eyebrow">WELCOME TO WIND FINDER</p>
+        <h2>누구에게 필요한 정보인가요?</h2>
+        <p class="muted">사용 목적에 맞게 첫 화면의 기능을 맞춰드릴게요.</p>
+        <div class="persona-grid">
+          <button class="persona-card" data-persona="A"><b>A</b><span>거주자 · 관리자</span><small>우리 건물 주변의 하루 위험 확인</small></button>
+          <button class="persona-card" data-persona="B"><b>B</b><span>소상공인</span><small>영업시간대 돌풍 위험 알림</small></button>
+          <button class="persona-card" data-persona="C"><b>C</b><span>라이더 · 보행자</span><small>고위험 구역을 피하는 경로</small></button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="forecastDialog" class="modal">
+      <div class="modal-content wide">
+        <div class="panel-head">
+          <div><p class="eyebrow">24H FORECAST</p><h2 id="forecastTitle">24시간 빌딩풍 위험 예측</h2></div>
+          <button class="icon-button" data-dialog-close="forecastDialog" aria-label="닫기">×</button>
+        </div>
+        <div class="chart-summary"><strong id="peakRisk">--</strong><span>최고 위험지수</span><p id="peakTime">예측 계산 중</p></div>
+        <div class="chart-wrap"><canvas id="riskChart"></canvas></div>
+        <button id="notificationButton" class="secondary-button">위험 시간대 알림 받기</button>
+      </div>
+    </dialog>
+
+    <dialog id="reportDialog" class="modal">
+      <form id="reportForm" class="modal-content">
+        <div class="panel-head">
+          <div><p class="eyebrow">FIELD REPORT</p><h2>현장 위험 제보</h2></div>
+          <button type="button" class="icon-button" data-dialog-close="reportDialog" aria-label="닫기">×</button>
+        </div>
+        <p class="pin-help">지도 위 핀을 끌어서 정확한 위치로 조정하세요.</p>
+        <label>제보 내용<textarea id="reportText" maxlength="500" required placeholder="강한 돌풍, 간판 흔들림 등 현장 상황을 알려주세요."></textarea></label>
+        <label>현장 사진<input id="reportPhoto" type="file" accept="image/jpeg,image/webp,image/png" required /></label>
+        <img id="photoPreview" class="photo-preview hidden" alt="압축할 제보 사진 미리보기" />
+        <div id="reportCoordinates" class="coordinate-chip">위치 확인 중…</div>
+        <button id="submitReportButton" class="primary-button" type="submit">제보 등록하기</button>
+        <p class="fine-print">사진은 640px 이하 WebP/JPEG로 압축되어 Firestore에 저장됩니다.</p>
+      </form>
+    </dialog>
+
+    <dialog id="reportDetailDialog" class="modal">
+      <article class="modal-content report-detail">
+        <div class="panel-head"><h2>현장 제보</h2><button class="icon-button" data-dialog-close="reportDetailDialog" aria-label="닫기">×</button></div>
+        <img id="detailPhoto" alt="현장 제보 사진" />
+        <p id="detailText"></p>
+        <time id="detailTime"></time>
+      </article>
+    </dialog>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

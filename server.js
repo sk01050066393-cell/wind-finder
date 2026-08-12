@@ -8,7 +8,7 @@ require("dotenv").config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, "public");
 const KAKAO_DIRECTIONS_URL = "https://apis-navi.kakaomobility.com/v1/directions";
 const VWORLD_URL = "https://api.vworld.kr/req/data";
 const KMA_FORECAST_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
