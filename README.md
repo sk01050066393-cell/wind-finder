@@ -21,9 +21,9 @@ http://localhost:3000
 
 ## 파일 구조
 
-- `index.html`: 카카오 지도, MarkerClusterer, Turf.js, Chart.js, 모달 UI
-- `styles.css`: 반응형 전체 화면 지도 UI
-- `app.js`: Firebase 익명 로그인/제보, 지도, 차트, 알림, 클러스터, 경로 표시
+- `public/index.html`: 카카오 지도, MarkerClusterer, Turf.js, Chart.js, 모달 UI
+- `public/styles.css`: 반응형 전체 화면 지도 UI
+- `public/app.js`: Firebase 익명 로그인/제보, 지도, 차트, 알림, 클러스터, 경로 표시
 - `server.js`: API 키 보호 프록시, 기상·건물 데이터 처리, Turf 기반 회피 경로 계산
 - `.env`: 로컬 인증키. Git에 커밋하면 안 됩니다.
 - `.env.example`: 배포 환경변수 예시
