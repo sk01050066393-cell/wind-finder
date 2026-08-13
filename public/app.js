@@ -342,10 +342,17 @@ function resetReportEditor() {
 
 async function beginReport() {
   resetReportEditor();
-  const location = await locateForReport();
-  if (location.exact) showCurrentLocation(location.position);
-  setReportMarker(location.position);
+  await refreshReportLocation();
   openDialog("reportDialog");
+}
+
+async function refreshReportLocation() {
+  const location = await locateForReport();
+  if (location.exact) {
+    showCurrentLocation(location.position);
+    showToast("현재 위치를 제보 위치로 설정했습니다.");
+  }
+  setReportMarker(location.position);
 }
 
 function setReportMarker(position) {
@@ -580,6 +587,12 @@ function bindUI() {
   $("routeButton").addEventListener("click", () => $("routePanel").classList.toggle("hidden"));
   $("findRouteButton").addEventListener("click", findSafeRoute);
   $("reportButton").addEventListener("click", beginReport);
+  const refreshLocationButton = document.createElement("button");
+  refreshLocationButton.type = "button";
+  refreshLocationButton.className = "secondary-button";
+  refreshLocationButton.textContent = "내 현재 위치 다시 찾기";
+  refreshLocationButton.addEventListener("click", refreshReportLocation);
+  $("reportCoordinates").before(refreshLocationButton);
   $("reportPhoto").addEventListener("change", previewReportPhoto);
   $("reportForm").addEventListener("submit", submitReport);
   $("reportDialog").addEventListener("close", () => state.reportMarker?.setMap(null));
