@@ -298,10 +298,13 @@ function drawRoute(coordinates) {
 
 function locateForReport() {
   return new Promise((resolve) => {
-    if (!navigator.geolocation) return resolve(getMapCenterCoordinate());
+    if (!navigator.geolocation) return resolve({ position: getMapCenterCoordinate(), exact: false });
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => resolve({ lat: coords.latitude, lng: coords.longitude }),
-      () => resolve(getMapCenterCoordinate()),
+      ({ coords }) => resolve({ position: { lat: coords.latitude, lng: coords.longitude }, exact: true }),
+      () => {
+        showToast("현재 위치 권한이 없어 지도 중심을 제보 위치로 사용합니다.");
+        resolve({ position: getMapCenterCoordinate(), exact: false });
+      },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
     );
   });
@@ -339,9 +342,9 @@ function resetReportEditor() {
 
 async function beginReport() {
   resetReportEditor();
-  const position = await locateForReport();
-  showCurrentLocation(position);
-  setReportMarker(position);
+  const location = await locateForReport();
+  if (location.exact) showCurrentLocation(location.position);
+  setReportMarker(location.position);
   openDialog("reportDialog");
 }
 
