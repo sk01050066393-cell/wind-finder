@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { GoogleAuthProvider, getAuth, signInAnonymously, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
   addDoc,
   collection,
@@ -23,6 +23,7 @@ const firebaseConfig = {
 };
 
 const HAEUNDAE = { lat: 35.1601, lng: 129.1605 };
+const ADMIN_EMAIL = "ojing-o09@naver.com";
 const FALLBACK_ZONES = [
   { id: "marine-city", name: "마린시티 고층건물군", type: "circle", center: [129.1431, 35.1554], radius: 115, risk: 84 },
   { id: "haeundae-beach", name: "해운대 해변 진입부", type: "circle", center: [129.1605, 35.1592], radius: 90, risk: 72 },
@@ -48,12 +49,14 @@ const state = {
   selectedPersona: null,
   photoDataUrl: "",
   editingReportId: null,
+  editingReportUserId: null,
   editingReportPhotoDataUrl: "",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
 
 const $ = (id) => document.getElementById(id);
 
@@ -63,6 +66,29 @@ function showToast(message, duration = 3200) {
   toast.classList.remove("hidden");
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toast.classList.add("hidden"), duration);
+}
+
+function isAdmin() {
+  return state.currentUser?.email?.toLowerCase() === ADMIN_EMAIL;
+}
+
+function updateAdminButton() {
+  const button = $("adminLoginButton");
+  if (!button) return;
+  button.textContent = isAdmin() ? "관리자 모드" : "관리자 로그인";
+  button.classList.toggle("accent", isAdmin());
+}
+
+async function signInAsAdmin() {
+  try {
+    const credential = await signInWithPopup(auth, googleProvider);
+    state.currentUser = credential.user;
+    updateAdminButton();
+    showToast(isAdmin() ? "관리자 모드로 로그인했습니다." : "이 계정은 관리자로 등록되지 않았습니다.", 5000);
+  } catch (error) {
+    console.error(error);
+    showToast("관리자 로그인에 실패했습니다.", 5000);
+  }
 }
 
 function setBusy(button, busy, label) {
@@ -331,6 +357,7 @@ function showCurrentLocation(position) {
 
 function resetReportEditor() {
   state.editingReportId = null;
+  state.editingReportUserId = null;
   state.editingReportPhotoDataUrl = "";
   state.photoDataUrl = "";
   $("reportForm").reset();
@@ -469,7 +496,7 @@ async function submitReport(event) {
       text,
       photoDataUrl,
       geohash: encodeGeohash(state.reportPosition.lat, state.reportPosition.lng, 9),
-      userId: state.currentUser.uid,
+      userId: editing ? state.editingReportUserId : state.currentUser.uid,
     };
     if (editing) await updateDoc(doc(db, "reports", state.editingReportId), { ...reportData, updatedAt: serverTimestamp() });
     else await addDoc(collection(db, "reports"), { ...reportData, createdAt: serverTimestamp() });
@@ -513,6 +540,7 @@ function showReportDetailLegacy(report) {
 
 function openReportEditor(report) {
   state.editingReportId = report.id;
+  state.editingReportUserId = report.userId;
   state.editingReportPhotoDataUrl = report.photoDataUrl || "";
   state.photoDataUrl = "";
   $("reportForm").reset();
@@ -542,7 +570,7 @@ function showReportDetail(report) {
     editButton.textContent = "내 제보 수정";
     $("detailTime").after(editButton);
   }
-  const canEdit = report.userId && report.userId === state.currentUser?.uid;
+  const canEdit = isAdmin() || (report.userId && report.userId === state.currentUser?.uid);
   editButton.classList.toggle("hidden", !canEdit);
   editButton.onclick = canEdit ? () => openReportEditor(report) : null;
   openDialog("reportDetailDialog");
@@ -586,6 +614,13 @@ function bindUI() {
   $("notificationButton").addEventListener("click", enableRiskNotifications);
   $("routeButton").addEventListener("click", () => $("routePanel").classList.toggle("hidden"));
   $("findRouteButton").addEventListener("click", findSafeRoute);
+  const adminButton = document.createElement("button");
+  adminButton.id = "adminLoginButton";
+  adminButton.type = "button";
+  adminButton.className = "dock-button";
+  adminButton.textContent = "관리자 로그인";
+  adminButton.addEventListener("click", signInAsAdmin);
+  document.querySelector(".action-dock").append(adminButton);
   $("reportButton").addEventListener("click", beginReport);
   const refreshLocationButton = document.createElement("button");
   refreshLocationButton.type = "button";
@@ -612,6 +647,7 @@ async function boot() {
   try {
     const credential = await signInAnonymously(auth);
     state.currentUser = credential.user;
+    updateAdminButton();
     if (mapReady) subscribeReports();
   } catch (error) {
     console.error(error);

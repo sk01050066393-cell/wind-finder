@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'ojing-o09@naver.com';
+    }
+
+    match /reports/{reportId} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn()
+        && request.resource.data.userId == resource.data.userId
+        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}
