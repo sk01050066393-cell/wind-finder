@@ -411,7 +411,7 @@ async function previewReportPhoto(event) {
   }
 }
 
-async function submitReport(event) {
+async function submitReportLegacy(event) {
   event.preventDefault();
   const button = $("submitReportButton");
   const text = $("reportText").value.trim();
@@ -493,7 +493,7 @@ function subscribeReports() {
   });
 }
 
-function showReportDetail(report) {
+function showReportDetailLegacy(report) {
   $("detailPhoto").src = report.photoDataUrl;
   $("detailText").textContent = report.text;
   const date = report.createdAt?.toDate?.();
