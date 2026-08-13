@@ -4,3 +4,5 @@ outputs/
 work/
 npm-debug.log*
 .DS_Store
+
+.vercel

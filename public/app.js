@@ -3,12 +3,14 @@ import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/1
 import {
   addDoc,
   collection,
+  doc,
   getFirestore,
   limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -35,6 +37,8 @@ const state = {
   riskOverlays: [],
   routePolyline: null,
   reportMarker: null,
+  currentLocationMarker: null,
+  currentLocationOverlay: null,
   reportPosition: null,
   reportClusterer: null,
   reportMarkers: [],
@@ -43,6 +47,8 @@ const state = {
   currentUser: null,
   selectedPersona: null,
   photoDataUrl: "",
+  editingReportId: null,
+  editingReportPhotoDataUrl: "",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
@@ -301,8 +307,40 @@ function locateForReport() {
   });
 }
 
+function showCurrentLocation(position) {
+  const latLng = new kakao.maps.LatLng(position.lat, position.lng);
+  if (!state.currentLocationMarker) {
+    state.currentLocationMarker = new kakao.maps.Marker({ position: latLng, map: state.map, title: "내 현재 위치" });
+  } else {
+    state.currentLocationMarker.setPosition(latLng);
+    state.currentLocationMarker.setMap(state.map);
+  }
+  if (!state.currentLocationOverlay) {
+    const label = document.createElement("div");
+    label.textContent = "내 현재 위치";
+    label.style.cssText = "padding:5px 8px;border-radius:999px;background:#1769ff;color:#fff;font:700 12px system-ui;box-shadow:0 2px 10px #0004;white-space:nowrap;";
+    state.currentLocationOverlay = new kakao.maps.CustomOverlay({ content: label, position: latLng, yAnchor: 2.4, map: state.map });
+  } else {
+    state.currentLocationOverlay.setPosition(latLng);
+    state.currentLocationOverlay.setMap(state.map);
+  }
+}
+
+function resetReportEditor() {
+  state.editingReportId = null;
+  state.editingReportPhotoDataUrl = "";
+  state.photoDataUrl = "";
+  $("reportForm").reset();
+  $("reportPhoto").required = true;
+  $("photoPreview").classList.add("hidden");
+  document.querySelector("#reportDialog h2").textContent = "현장 위험 제보";
+  $("submitReportButton").textContent = "제보 등록하기";
+}
+
 async function beginReport() {
+  resetReportEditor();
   const position = await locateForReport();
+  showCurrentLocation(position);
   setReportMarker(position);
   openDialog("reportDialog");
 }
@@ -404,6 +442,39 @@ async function submitReport(event) {
   }
 }
 
+async function submitReport(event) {
+  event.preventDefault();
+  const button = $("submitReportButton");
+  const text = $("reportText").value.trim();
+  const photoDataUrl = state.photoDataUrl || state.editingReportPhotoDataUrl;
+  if (!state.currentUser) return showToast("로그인 연결을 기다려 주세요.");
+  if (!state.reportPosition || !photoDataUrl || !text) return showToast("위치, 사진, 제보 내용을 모두 확인하세요.");
+
+  const editing = Boolean(state.editingReportId);
+  setBusy(button, true, editing ? "수정 저장 중…" : "제보 등록 중…");
+  try {
+    const reportData = {
+      lat: state.reportPosition.lat,
+      lng: state.reportPosition.lng,
+      text,
+      photoDataUrl,
+      geohash: encodeGeohash(state.reportPosition.lat, state.reportPosition.lng, 9),
+      userId: state.currentUser.uid,
+    };
+    if (editing) await updateDoc(doc(db, "reports", state.editingReportId), { ...reportData, updatedAt: serverTimestamp() });
+    else await addDoc(collection(db, "reports"), { ...reportData, createdAt: serverTimestamp() });
+    resetReportEditor();
+    state.reportMarker?.setMap(null);
+    closeDialog("reportDialog");
+    showToast(editing ? "제보가 수정되었습니다." : "현장 제보가 등록되었습니다.");
+  } catch (error) {
+    console.error(error);
+    showToast(error.code === "permission-denied" ? "제보 수정 권한이 없습니다. Firebase 보안 규칙을 확인하세요." : "제보 저장에 실패했습니다.", 5000);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
 function subscribeReports() {
   const reportsQuery = query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(300));
   onSnapshot(reportsQuery, (snapshot) => {
@@ -427,6 +498,43 @@ function showReportDetail(report) {
   $("detailText").textContent = report.text;
   const date = report.createdAt?.toDate?.();
   $("detailTime").textContent = date ? date.toLocaleString("ko-KR") : "방금 전";
+  openDialog("reportDetailDialog");
+}
+
+function openReportEditor(report) {
+  state.editingReportId = report.id;
+  state.editingReportPhotoDataUrl = report.photoDataUrl || "";
+  state.photoDataUrl = "";
+  $("reportForm").reset();
+  $("reportPhoto").required = false;
+  $("reportText").value = report.text || "";
+  $("photoPreview").src = state.editingReportPhotoDataUrl;
+  $("photoPreview").classList.toggle("hidden", !state.editingReportPhotoDataUrl);
+  document.querySelector("#reportDialog h2").textContent = "내 제보 수정";
+  $("submitReportButton").textContent = "수정 저장하기";
+  setReportMarker({ lat: report.lat, lng: report.lng });
+  closeDialog("reportDetailDialog");
+  openDialog("reportDialog");
+}
+
+function showReportDetail(report) {
+  $("detailPhoto").src = report.photoDataUrl;
+  $("detailText").textContent = report.text;
+  const date = report.updatedAt?.toDate?.() || report.createdAt?.toDate?.();
+  $("detailTime").textContent = date ? date.toLocaleString("ko-KR") : "방금 전";
+
+  let editButton = $("editReportButton");
+  if (!editButton) {
+    editButton = document.createElement("button");
+    editButton.id = "editReportButton";
+    editButton.type = "button";
+    editButton.className = "secondary-button";
+    editButton.textContent = "내 제보 수정";
+    $("detailTime").after(editButton);
+  }
+  const canEdit = report.userId && report.userId === state.currentUser?.uid;
+  editButton.classList.toggle("hidden", !canEdit);
+  editButton.onclick = canEdit ? () => openReportEditor(report) : null;
   openDialog("reportDetailDialog");
 }
 
